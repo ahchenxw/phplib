@@ -81,4 +81,23 @@ class Util
         }
         return $str;
     }
+
+    /**
+     * 字节单位格式化
+     * @param $size
+     * @param int $dec
+     * @return string
+     */
+    public static function byteFormat($size, $dec = 2)
+    {
+        $a = array("B", "KB", "MB", "GB", "TB", "PB");
+        $pos = 0;
+        while ($size >= 1024) {
+            $size /= 1024;
+            $pos++;
+        }
+        return round($size, $dec) . " " . $a[$pos];
+    }
+
+
 }
