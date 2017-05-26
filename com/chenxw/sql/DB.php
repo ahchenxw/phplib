@@ -323,7 +323,7 @@ QUERY;
             }
             //$data不是数组
             if (!is_array($data)) {
-                return ["`$key` = ('" . str_replace("'", "\\'", $data) . "')"];
+                return ["`$key` = ('" . addcslashes($data, "'") . "')"];
             }
 
             //数组中第一条数据是字符串，即表达式
@@ -337,17 +337,17 @@ QUERY;
                 switch ($exp) {
                     case 'BETWEEN':
                     case 'NOT BETWEEN':
-                        $res[] = "`$key` $exp '" . str_replace("'", "\\'", $data[1][0]) . "' AND '" . str_replace("'", "\\'", $data[1][1]) . "'";
+                        $res[] = "`$key` $exp '" . addcslashes($data[1][0], "'") . "' AND '" . addcslashes($data[1][1], "'") . "'";
                         break;
                     default:
                         //数组中第二条数据是数组
                         if (is_array($data[1])) {
                             array_walk($data[1], function (&$val) {
-                                $val = "'" . str_replace("'", "\\'", $val) . "'";
+                                $val = "'" . addcslashes($val, "'") . "'";
                             });
                             $d1 = implode(',', $data[1]);
                         } else {
-                            $d1 = "'" . str_replace("'", "\\'", $data[1]) . "'";
+                            $d1 = "'" . addcslashes($data[1], "'") . "'";
                         }
                         $res[] = "`$key` $exp ($d1)";
                         break;
@@ -422,7 +422,7 @@ QUERY;
         $data = $this->data;
         array_walk($data, function (&$val, $key) {
             if (!is_numeric($key)) {
-                $val = "`$key`='" . str_replace("'", "\\'", $val) . "'";
+                $val = "`$key`='" . addcslashes($val, "'") . "'";
             }
         });
         return implode(',', $data);
