@@ -88,17 +88,21 @@ class Log
     {
         $res = false;
         if (is_array(self::$log) && count(self::$log) > 0) {
-            $filename = self::$logPath[$this->pathType];
+            $fileName = self::$logPath[$this->pathType];
 
             //文件过大生成一个新文件
-            if (file_exists($filename)) {
-                $size = filesize($filename);
+            if (file_exists($fileName)) {
+                $size = filesize($fileName);
                 if ($size > self::LOG_MAX_SIZE) {
-                    $new = dirname($filename) . '/' . date('YmdHis') . '-' . basename($filename);
-                    rename($filename, $new);
+                    $info = pathinfo($fileName);
+                    $newName = $info['dirname'] . DIRECTORY_SEPARATOR . $info['filename'] . '_' . date('YmdHis');
+                    if (isset($info['extension'])) {
+                        $newName .= '.' . $info['extension'];
+                    }
+                    rename($fileName, $newName);
                 }
             }
-            $res = file_put_contents($filename, implode('', self::$log), FILE_APPEND | LOCK_EX) != false;
+            $res = file_put_contents($fileName, implode('', self::$log), FILE_APPEND | LOCK_EX) != false;
         }
         self::$log = [];
         return $res;
