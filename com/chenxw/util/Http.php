@@ -12,16 +12,20 @@ class Http
     private $url; //请求地址
     private $data; //请求数据
     private $post = 0; //是否是POST方式提交数据，默认：0
-    private $cookiePath; //COOKIE存放路径
+    private $cookiePath = null; //COOKIE存放路径
 
     private $userAgent = 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36';
-    private $followLocation = 1;
-    private $autoReferer = 1;
+    private $followLocation = 1; //执行重定向
+    private $referer = null; //伪造来源
+    private $autoReferer = 1; //当执行重定向时，自动填充REFERER
     private $sslVerifyPeer = 0;
     private $sslVerifyHost = 2;
     private $returnTransfer = 1;
-    private $header = 0;
     private $timeout = 30;
+
+    private $header = 0; //输出HEADER
+    private $httpHeader = null;
+    private $resultHeader;
 
     /**
      * @param $url
@@ -64,13 +68,19 @@ class Http
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, $this->sslVerifyPeer);
         curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, $this->sslVerifyHost);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, $this->returnTransfer);
-        curl_setopt($curl, CURLOPT_HEADER, $this->header);
-        curl_setopt($curl, CURLOPT_USERAGENT, $this->userAgent);
-        curl_setopt($curl, CURLOPT_POST, $this->post);
-        curl_setopt($curl, CURLOPT_FOLLOWLOCATION, $this->followLocation);
-        curl_setopt($curl, CURLOPT_AUTOREFERER, $this->autoReferer);
-        curl_setopt($curl, CURLOPT_TIMEOUT, $this->timeout);
 
+        curl_setopt($curl, CURLOPT_USERAGENT, $this->userAgent);
+        curl_setopt($curl, CURLOPT_FOLLOWLOCATION, $this->followLocation);
+        curl_setopt($curl, CURLOPT_TIMEOUT, $this->timeout);
+        curl_setopt($curl, CURLOPT_AUTOREFERER, $this->autoReferer);
+
+        curl_setopt($curl, CURLOPT_HEADER, $this->header);
+        if ($this->httpHeader) {
+            curl_setopt($curl, CURLOPT_HTTPHEADER, $this->httpHeader);
+        }
+
+        //设置POST数据内容
+        curl_setopt($curl, CURLOPT_POST, $this->post);
         if ($this->post) {
             curl_setopt($curl, CURLOPT_POSTFIELDS, $postFields);
         }
@@ -78,9 +88,20 @@ class Http
             curl_setopt($curl, CURLOPT_COOKIEJAR, $this->cookiePath);
             curl_setopt($curl, CURLOPT_COOKIEFILE, $this->cookiePath);
         }
-        $exec = curl_exec($curl);
+        if ($this->referer) {
+            curl_setopt($curl, CURLOPT_REFERER, $this->referer);
+        }
+        $result = curl_exec($curl);
+
+        //解析下行Header
+        $curlInfo = curl_getinfo($curl);
+        if ($this->header) {
+            $this->resultHeader = substr($result, 0, $curlInfo['header_size']);
+            $result = substr($result, $curlInfo['header_size']);
+        }
+
         curl_close($curl);
-        return $exec;
+        return $result;
     }
 
     /**
@@ -112,6 +133,52 @@ class Http
         $this->post = intval($post);
         return $this;
     }
+
+    /**
+     * @return null
+     */
+    public function getHttpHeader()
+    {
+        return $this->httpHeader;
+    }
+
+    /**
+     * @param $httpHeader
+     * @return $this
+     */
+    public function setHttpHeader($httpHeader)
+    {
+        $this->httpHeader = $httpHeader;
+        return $this;
+    }
+
+    /**
+     * @return null
+     */
+    public function getReferer()
+    {
+        return $this->referer;
+    }
+
+    /**
+     * @param $referer
+     * @return $this
+     */
+    public function setReferer($referer)
+    {
+        $this->referer = $referer;
+        return $this;
+    }
+
+    /**
+     * 获取下行Header内容
+     * @return mixed
+     */
+    public function getResultHeader()
+    {
+        return $this->resultHeader;
+    }
+
 
     /**
      * @param string $userAgent
